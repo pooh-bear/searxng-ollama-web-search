@@ -30,14 +30,26 @@ echo "    registered, shortcut: $(curl -sS -m 20 "${BASE_URL}/config" \
     | jq -r '.engines[] | select(.name == "ollama web") | .shortcut')"
 
 echo "==> querying the engine directly (engine-specific)"
-resp=$(curl -sS -m 60 --get "${BASE_URL}/search" \
-    --data-urlencode "q=${QUERY}" \
-    --data 'format=json' \
-    --data-urlencode 'engines=ollama web')
+# The API intermittently returns an empty result set on the first attempt, so
+# give the engine a few tries before declaring it broken.
+ATTEMPTS="${ATTEMPTS:-3}"
+attempt=0
+while :; do
+    attempt=$((attempt + 1))
+    resp=$(curl -sS -m 60 --get "${BASE_URL}/search" \
+        --data-urlencode "q=${QUERY}" \
+        --data 'format=json' \
+        --data-urlencode 'engines=ollama web')
 
-# printf, not echo: dash (Debian/Ubuntu /bin/sh) expands backslash escapes in
-# echo, which corrupts the JSON before jq ever sees it.
-n=$(printf '%s' "$resp" | jq -r '.results | length')
+    # printf, not echo: dash (Debian/Ubuntu /bin/sh) expands backslash escapes
+    # in echo, which corrupts the JSON before jq ever sees it.
+    n=$(printf '%s' "$resp" | jq -r '.results | length')
+    [ "$n" -gt 0 ] && break
+    [ "$attempt" -lt "$ATTEMPTS" ] || break
+    echo "    no results on attempt ${attempt}/${ATTEMPTS}; retrying" >&2
+    sleep 2
+done
+
 unresp=$(printf '%s' "$resp" | jq -r '[.unresponsive_engines // [] | .[] | select(.[0] == "ollama web")] | length')
 
 if [ "$unresp" -ne 0 ]; then
