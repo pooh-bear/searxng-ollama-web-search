@@ -146,6 +146,91 @@ and jq — point it at any instance with the engine installed:
 ./scripts/smoke-test.sh http://localhost:8080
 ```
 
+## CI: automated PR review
+
+`buildkite/pipeline.yml` runs [OpenCodeReview](https://github.com/alibaba/open-code-review)
+on every pull request and posts its findings back to GitHub: a sticky summary
+comment plus inline review comments. Re-review on demand by commenting a word
+containing `open-code-review` on the PR.
+
+Everything below is one-time pipeline setup. `buildkite/pipeline.yml` only
+needs the two secrets and the environment variables described in its header.
+
+### 1. Pipeline
+
+Create a pipeline for this repository in the **Default** cluster, with a
+single bootstrap step:
+
+```yaml
+steps:
+  - command: "buildkite-agent pipeline upload"
+```
+
+The steps that actually do the review live in `buildkite/pipeline.yml` and are
+uploaded at build time.
+
+### 2. Environment
+
+The review step reads `OCR_LLM_URL` and `OCR_LLM_MODEL`, so the pipeline needs
+them in its **pipeline-level** environment (dashboard: *Pipeline Settings →
+Environment*, or the `env` key of the pipeline configuration):
+
+```yaml
+env:
+  OCR_LLM_URL: "https://your-gateway/v1"
+  OCR_LLM_MODEL: "your-model"
+```
+
+The REST API cannot set pipeline environment: `POST`/`PATCH` on
+`/v2/organizations/{org}/pipelines` ignore an `env` body field, and neither
+the REST nor the GraphQL pipeline update input exposes one. Set `env` as part
+of the pipeline **configuration** (as above) or in the dashboard.
+
+### 3. Secrets
+
+Buildkite secrets are cluster-scoped and are not visible to unclustered
+agents, so the pipeline must be in a cluster. Secret **keys are unique per
+cluster**; if the cluster already defines `OCR_LLM_TOKEN` / `OCR_GITHUB_TOKEN`
+for another pipeline, store this pipeline's own keys and map them onto the env
+var names the scripts read (the hash form is `ENV_VAR: SECRET_KEY`):
+
+```yaml
+secrets:
+  OCR_LLM_TOKEN: SEARXNG_OCR_LLM_TOKEN
+  OCR_GITHUB_TOKEN: SEARXNG_OCR_GITHUB_TOKEN
+```
+
+Policy-restrict both to this pipeline:
+
+```yaml
+- pipeline_slug: <this-pipeline-slug>
+  cluster_queue_key: <queue-key>
+```
+
+`OCR_GITHUB_TOKEN` is a GitHub token with `pull-requests: write` on this
+repository; `OCR_LLM_TOKEN` authenticates to the LLM gateway.
+
+### 4. GitHub triggers
+
+Enable **Build pull requests** and an **Issue comment trigger** with command
+word `open-code-review` and match mode *contains*, mirroring the settings in
+`buildkite/pipeline.yml`.
+
+Creating a pipeline through the REST API does **not** register a repository
+webhook — the dashboard does it for you, the API does not. Without it no
+webhook events arrive at all and the pipeline only ever builds when triggered
+manually. Register it explicitly:
+
+```sh
+curl -X POST \
+  -H "Authorization: Bearer $BUILDKITE_API_TOKEN" \
+  "https://api.buildkite.com/v2/organizations/{org}/pipelines/{slug}/webhook"
+```
+
+`201` means the webhook was created. Verify end-to-end by opening a PR: a
+build should appear within seconds, and its `:mag: OpenCodeReview` step should
+post the summary comment.
+
 ## Contributions
 
 Contributions welcome — please submit a PR and tag @pooh-bear.
