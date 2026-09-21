@@ -8,10 +8,11 @@ catalog at `ollama.com/search` by scraping HTML — it is a model/repo search, n
 a web search. This project adds the actual web search API as a first-class
 general-purpose engine.
 
-Because the API needs no scraping, the engine does not get CAPTCHA-blocked or
-rate-limited the way Google/Bing/DuckDuckGo/Startpage-based engines routinely
-do. If your instance mostly returns `429 Too Many Requests`, this gives it one
-reliable, always-responding general engine.
+Because the API is authenticated rather than scraped, the engine is not
+subject to the CAPTCHA/access-denied suspensions that Google-, Bing-,
+DuckDuckGo- and Startpage-based engines routinely hit. For an instance whose
+scrapers mostly return `429 Too Many Requests`, that makes it a dependable
+general engine — see [Rate limits](#rate-limits) for the caveats.
 
 ## Requirements
 
