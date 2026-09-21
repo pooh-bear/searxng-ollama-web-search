@@ -31,7 +31,9 @@ echo "    registered, shortcut: $(curl -sS -m 20 "${BASE_URL}/config" \
 
 echo "==> querying the engine directly (engine-specific)"
 # The API intermittently returns an empty result set on the first attempt, so
-# give the engine a few tries before declaring it broken.
+# give the engine a few tries before declaring it broken. A response we cannot
+# parse, and one that names the engine in unresponsive_engines, are not
+# transient: those break out immediately so the checks below report them.
 ATTEMPTS="${ATTEMPTS:-3}"
 attempt=0
 while :; do
@@ -43,14 +45,28 @@ while :; do
 
     # printf, not echo: dash (Debian/Ubuntu /bin/sh) expands backslash escapes
     # in echo, which corrupts the JSON before jq ever sees it.
-    n=$(printf '%s' "$resp" | jq -r '.results | length')
+    #
+    # `|| true` plus the ${n:-0} default: under `set -e` a non-JSON body (a
+    # gateway error page served with HTTP 200, say) makes jq exit non-zero and
+    # would abort the whole test here with a bare parse error; a valid but
+    # empty body prints nothing, leaving n empty and breaking -gt. Both are
+    # normalized to 0 so the loop and the checks below stay meaningful.
+    n=$(printf '%s' "$resp" | jq -r '.results | length' 2>/dev/null || true)
+    n=${n:-0}
     [ "$n" -gt 0 ] && break
+    # A hard engine error (bad OLLAMA_API_KEY, suspension) will not resolve
+    # itself; let the unresponsive check below print the real diagnostic
+    # rather than sleeping through every attempt.
+    printf '%s' "$resp" \
+        | jq -e '[.unresponsive_engines // [] | .[] | select(.[0] == "ollama web")] | length == 0' \
+            >/dev/null 2>&1 || break
     [ "$attempt" -lt "$ATTEMPTS" ] || break
     echo "    no results on attempt ${attempt}/${ATTEMPTS}; retrying" >&2
     sleep 2
 done
 
-unresp=$(printf '%s' "$resp" | jq -r '[.unresponsive_engines // [] | .[] | select(.[0] == "ollama web")] | length')
+unresp=$(printf '%s' "$resp" | jq -r '[.unresponsive_engines // [] | .[] | select(.[0] == "ollama web")] | length' 2>/dev/null || true)
+unresp=${unresp:-0}
 
 if [ "$unresp" -ne 0 ]; then
     printf '%s' "$resp" | jq -r '.unresponsive_engines'
