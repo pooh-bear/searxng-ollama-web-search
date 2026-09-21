@@ -78,11 +78,19 @@ def request(query: str, params) -> None:
 def response(resp: "SXNG_Response") -> EngineResults:
     res = EngineResults()
 
-    for result in resp.json().get("results") or []:
+    payload = resp.json()
+    if not isinstance(payload, dict):
+        raise SearxEngineAPIException("unexpected response from the Ollama web search API: not a JSON object")
+
+    for result in payload.get("results") or []:
+        url = result.get("url") or ""
+        if not url:
+            # a result without a URL renders as a dead link in the result list
+            continue
         res.add(
             res.types.MainResult(
-                title=result.get("title") or "",
-                url=result.get("url") or "",
+                title=result.get("title") or url,
+                url=url,
                 content=result.get("content") or "",
             )
         )
