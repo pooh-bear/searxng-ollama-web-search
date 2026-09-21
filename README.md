@@ -133,6 +133,8 @@ settings.example.yml      minimal settings.yml wiring the engine up
 docker-compose.yml        example stack: mounts the engine + env file
 searxng.env.example       template for the API key (copy to searxng.env)
 scripts/smoke-test.sh     end-to-end check against a running instance
+buildkite/pipeline.yml    OpenCodeReview step for Buildkite PR builds (see CI)
+buildkite/*.js            adapters that post review findings back to GitHub
 ```
 
 ## Development
