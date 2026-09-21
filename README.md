@@ -233,6 +233,21 @@ curl -X POST \
 build should appear within seconds, and its `:mag: OpenCodeReview` step should
 post the summary comment.
 
+If the pipeline was created through the REST API or the dashboard with the
+defaults, also check **Skip pull request builds for existing commits**
+(`skip_pull_request_builds_for_existing_commits`). While it is on, a PR whose
+branch head already has a successful branch build is not built again when the
+PR is opened, so a freshly opened PR gets no review until the next push. Turn
+it off for review-on-open:
+
+```sh
+curl -X PATCH \
+  -H "Authorization: Bearer $BUILDKITE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"provider_settings":{"skip_pull_request_builds_for_existing_commits":false}}' \
+  "https://api.buildkite.com/v2/organizations/{org}/pipelines/{slug}"
+```
+
 ## Contributions
 
 Contributions welcome — please submit a PR and tag @pooh-bear.

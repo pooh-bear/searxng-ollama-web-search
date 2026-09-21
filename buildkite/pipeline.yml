@@ -18,7 +18,8 @@
 #                           (NOT the full .../chat/completions path — either
 #                           form works, but the base URL is simplest).
 #       OCR_LLM_MODEL      Model name.
-#       OCR_GITHUB_REPO    "owner/name" of the repo this pipeline builds.
+#       OCR_GITHUB_REPO    Optional "owner/name" override; only needed when
+#                          BUILDKITE_REPO is not a github.com URL.
 #   - GitHub pipeline settings: "Build when pull request is opened or
 #     updated" enabled, plus an Issue comment trigger (command word
 #     "open-code-review", match mode "contains") — see README.md.
