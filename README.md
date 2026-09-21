@@ -69,7 +69,7 @@ engines:
   - name: ollama web
     engine: ollama_web
     shortcut: oll
-    results_per_page: 10   # optional, the API allows 1..10 (default 5)
+    results_per_page: 10   # optional, 1..10; engine default is 10
 ```
 
 ## Configuration
@@ -77,17 +77,23 @@ engines:
 | Setting | Required | Description |
 | --- | --- | --- |
 | `api_key` | no | Ollama API key. Falls back to the `OLLAMA_API_KEY` environment variable. |
-| `results_per_page` | no | Results to request, `1`–`10`. Clamped; defaults to `10`. |
+| `results_per_page` | no | Results to request, `1`–`10`. Clamped; engine default `10`. |
 
 The key is resolved in this order: `api_key` in `settings.yml`, then
 `OLLAMA_API_KEY` in the process environment. The environment variable is the
 recommended option — it keeps the secret out of a file that may be committed.
 
-If neither is set, engine initialisation raises and SearXNG logs
+If neither is set, engine initialization raises and SearXNG logs
 `ollama web: engine INIT failed, exception: No API key provided`, followed by
 `can't register engines processor (init engine failed)`. The rest of the
 instance keeps working and other engines are unaffected; only `ollama web` is
 left without a request processor.
+
+> **`max_results` default.** The engine always sends an explicit
+> `max_results`, because omitting the field does not fall back to the
+> documented default of 5 — in testing, the API returned **3** results for
+> every query with the field omitted. Sending `max_results: 5` returns 5 and
+> `max_results: 10` returns 10.
 
 > **Docker Compose gotcha.** Values under `environment:` take precedence over
 > `env_file:`. Defining `OLLAMA_API_KEY=${OLLAMA_API_KEY:-}` in `environment:`
@@ -139,6 +145,10 @@ and jq — point it at any instance with the engine installed:
 ```sh
 ./scripts/smoke-test.sh http://localhost:8080
 ```
+
+## Contributions
+
+Contributions welcome — please submit a PR and tag @pooh-bear.
 
 ## License
 
