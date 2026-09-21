@@ -72,6 +72,30 @@ engines:
     results_per_page: 10   # optional, 1..10; engine default is 10
 ```
 
+### Updating a deployed instance
+
+SearXNG loads engine modules once at startup, so editing
+`engines/ollama_web.py` on the host changes nothing until the process is
+restarted. If your instance bind-mounts the module (as the compose file here
+does), updating is a copy plus a restart:
+
+```sh
+cp engines/ollama_web.py /path/to/instance/searxng/engines/ollama_web.py
+docker restart <container>
+```
+
+Verify the *running* process picked it up, rather than trusting the file on
+disk — the module's source can be introspected from inside the container:
+
+```sh
+docker exec <container> /usr/local/searxng/.venv/bin/python -c \
+  'import inspect, searx.engines.ollama_web as m; print(m.__file__); print(inspect.getsource(m.response))'
+```
+
+A plain `docker cp` into a container that is recreated from a compose file
+without a matching bind-mount is lost on the next `docker compose up -d`; mount
+the file instead, and the checkout stays the single source of truth.
+
 ## Configuration
 
 | Setting | Required | Description |
