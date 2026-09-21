@@ -11,6 +11,7 @@ searxng/
 # Python
 __pycache__/
 *.py[cod]
+
 # Editors / OS
 .DS_Store
 *.swp
