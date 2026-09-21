@@ -1,0 +1,16 @@
+# Secrets: never commit API keys.
+searxng.env
+.env
+
+# Runtime instance config (holds the generated secret_key) and data.
+searxng/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editors / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/

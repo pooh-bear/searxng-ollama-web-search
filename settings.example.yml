@@ -1,0 +1,38 @@
+# Example SearXNG settings for the "ollama web" engine.
+#
+# Copy this to ./searxng/settings.yml and set server.secret_key (see README).
+# "use_default_settings: true" keeps the upstream engine list and merges the
+# "engines:" block below into it.
+
+use_default_settings: true
+
+general:
+  instance_name: "SearXNG + Ollama web search"
+
+search:
+  formats:
+    - html
+    - json
+
+server:
+  # REQUIRED: replace with your own key, e.g.
+  #   openssl rand -hex 32
+  # SearXNG refuses to start with the default value.
+  secret_key: "CHANGE-ME"
+  limiter: false
+  public_instance: false
+
+valkey:
+  url: false
+
+# The "ollama web" engine is provided by ./engines/ollama_web.py, which
+# docker-compose mounts into the image.  The API key is read from the
+# OLLAMA_API_KEY environment variable (see ./searxng.env), so it never has to
+# be written into this file.
+#
+# The engine declares ["general", "web"], so it needs no "categories:" here.
+engines:
+  - name: ollama web
+    engine: ollama_web
+    shortcut: oll
+    results_per_page: 10
