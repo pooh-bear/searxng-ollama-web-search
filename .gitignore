@@ -5,10 +5,12 @@ searxng.env
 # Runtime instance config (holds the generated secret_key) and data.
 searxng/
 
+# Buildkite OpenCodeReview job output (uploaded as artifacts).
+.ocr/
+
 # Python
 __pycache__/
 *.py[cod]
-
 # Editors / OS
 .DS_Store
 *.swp
